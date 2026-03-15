@@ -6,6 +6,10 @@ updates:
       interval: "weekly"
     reviewers:
       - "mthooyavan"
+    groups:
+      all-pip:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -13,6 +17,10 @@ updates:
       interval: "weekly"
     reviewers:
       - "mthooyavan"
+    groups:
+      all-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -20,3 +28,7 @@ updates:
       interval: "weekly"
     reviewers:
       - "mthooyavan"
+    groups:
+      all-docker:
+        patterns:
+          - "*"
