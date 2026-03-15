@@ -35,21 +35,27 @@ def _get_agent_prompt(agent_name: str) -> str:
     """Import and return the focus prompt for a given agent."""
     if agent_name == "logic":
         from diff_fox.review.prompts.logic import LOGIC_FOCUS_PROMPT
+
         return LOGIC_FOCUS_PROMPT
     elif agent_name == "security":
         from diff_fox.review.prompts.security import SECURITY_FOCUS_PROMPT
+
         return SECURITY_FOCUS_PROMPT
     elif agent_name == "architecture":
         from diff_fox.review.prompts.architecture import ARCHITECTURE_FOCUS_PROMPT
+
         return ARCHITECTURE_FOCUS_PROMPT
     elif agent_name == "performance":
         from diff_fox.review.prompts.performance import PERFORMANCE_FOCUS_PROMPT
+
         return PERFORMANCE_FOCUS_PROMPT
     elif agent_name == "risk":
         from diff_fox.review.prompts.risk import RISK_FOCUS_PROMPT
+
         return RISK_FOCUS_PROMPT
     elif agent_name == "cogs":
         from diff_fox.review.prompts.cogs import COGS_FOCUS_PROMPT
+
         return COGS_FOCUS_PROMPT
     raise ValueError(f"Unknown agent: {agent_name}")
 
@@ -148,14 +154,11 @@ def _format_context(ctx: EnrichedContext | None, agent_name: str) -> str:
         if impacts:
             parts.append(f"\nIMPACT ANALYSIS ({len(impacts)} potential issues):")
             for imp in impacts:
-                parts.append(
-                    f"  - [{imp.severity.upper()}] {imp.impact_type}: {imp.description}"
-                )
+                parts.append(f"  - [{imp.severity.upper()}] {imp.impact_type}: {imp.description}")
 
     if len(symbols) > MAX_CONTEXT_SYMBOLS:
         parts.append(
-            f"\n[CONTEXT TRUNCATED — showing {MAX_CONTEXT_SYMBOLS} "
-            f"of {len(symbols)} symbols]"
+            f"\n[CONTEXT TRUNCATED — showing {MAX_CONTEXT_SYMBOLS} of {len(symbols)} symbols]"
         )
 
     return "\n".join(parts)
@@ -184,8 +187,7 @@ def build_system_prompt(
 
     if agent_name == "security" and security_scan_instructions:
         prompt += (
-            "\n\nADDITIONAL ORGANIZATION-SPECIFIC SECURITY CHECKS:\n"
-            f"{security_scan_instructions}\n"
+            f"\n\nADDITIONAL ORGANIZATION-SPECIFIC SECURITY CHECKS:\n{security_scan_instructions}\n"
         )
 
     return prompt
@@ -212,7 +214,7 @@ def build_user_message(
 
     pr_context = ""
     if pr_title or pr_description:
-        pr_context = "<pr_context>\n" f"Title: {pr_title}\n"
+        pr_context = f"<pr_context>\nTitle: {pr_title}\n"
         if pr_description:
             desc = pr_description[:2000]
             pr_context += f"Description: {desc}\n"
@@ -252,22 +254,35 @@ async def _run_single_agent(
     t0 = time.monotonic()
 
     system_prompt = build_system_prompt(
-        agent_name, config,
+        agent_name,
+        config,
         security_scan_instructions=config.security_scan_instructions,
     )
     user_message = build_user_message(
-        diff_files, ctx, pr_title, pr_description,
-        existing_comments, jira_context_text, agent_name,
+        diff_files,
+        ctx,
+        pr_title,
+        pr_description,
+        existing_comments,
+        jira_context_text,
+        agent_name,
     )
 
     try:
         result, token_count = await get_structured_output(
-            client, model, system_prompt, user_message, ReviewFindings,
+            client,
+            model,
+            system_prompt,
+            user_message,
+            ReviewFindings,
         )
         duration_ms = (time.monotonic() - t0) * 1000
         logger.info(
             "Agent %s: %d findings, %d tokens, %.0fms",
-            agent_name, len(result.findings), token_count, duration_ms,
+            agent_name,
+            len(result.findings),
+            token_count,
+            duration_ms,
         )
         metrics = {
             f"agent_{agent_name}_tokens": token_count,
@@ -334,13 +349,25 @@ async def run_pipeline(
         agent_skip = agent_cfg.skip if agent_cfg else []
 
         agent_files = filter_files_for_agent(
-            diff_files, config.include, config.skip, agent_include, agent_skip,
+            diff_files,
+            config.include,
+            config.skip,
+            agent_include,
+            agent_skip,
         )
 
         agent_tasks.append(
             _run_single_agent(
-                name, agent_files, ctx, config, client, model,
-                pr_title, pr_description, existing_comments, jira_context_text,
+                name,
+                agent_files,
+                ctx,
+                config,
+                client,
+                model,
+                pr_title,
+                pr_description,
+                existing_comments,
+                jira_context_text,
             )
         )
 

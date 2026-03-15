@@ -118,9 +118,7 @@ class Finding(BaseModel):
         "security_architect",
         "engineering_manager",
     ] = Field(description="Which engineering perspective caught this")
-    impact_description: str = Field(
-        description="1 sentence: what breaks if this isn't fixed"
-    )
+    impact_description: str = Field(description="1 sentence: what breaks if this isn't fixed")
     suggested_fix: str | None = Field(
         default=None,
         description="Plain text explanation of how to fix.",

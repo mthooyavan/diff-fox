@@ -7,7 +7,12 @@ from pathlib import PurePosixPath
 import httpx
 import yaml
 
-from diff_fox.config.models import AgentPathConfig, ResolvedAgentConfig, ResolvedConfig, ReviewConfig
+from diff_fox.config.models import (
+    AgentPathConfig,
+    ResolvedAgentConfig,
+    ResolvedConfig,
+    ReviewConfig,
+)
 from diff_fox.constants import ALL_AGENT_NAMES, CONFIG_FILE_NAME, MAX_PROJECT_CONFIG_DEPTH
 from diff_fox.scm.base import SCMProvider
 
@@ -32,8 +37,10 @@ def _normalize_agent_config(value) -> ResolvedAgentConfig:
         return ResolvedAgentConfig(enabled=value)
     if isinstance(value, AgentPathConfig):
         return ResolvedAgentConfig(
-            enabled=value.enabled, include=list(value.include),
-            skip=list(value.skip), suppress_filters=list(value.suppress_filters),
+            enabled=value.enabled,
+            include=list(value.include),
+            skip=list(value.skip),
+            suppress_filters=list(value.suppress_filters),
         )
     if isinstance(value, dict):
         return ResolvedAgentConfig(**value)
@@ -92,8 +99,10 @@ def resolve_config(
             merged_jira_enabled = project_config.jira.get("enabled", merged_jira_enabled)
 
     return ResolvedConfig(
-        agents=merged_agents, guidelines=merged_guidelines,
-        include=merged_include, skip=merged_skip,
+        agents=merged_agents,
+        guidelines=merged_guidelines,
+        include=merged_include,
+        skip=merged_skip,
         suppress_filters=merged_suppress,
         security_scan_instructions=merged_security_scan,
         jira_enabled=merged_jira_enabled,
@@ -104,8 +113,7 @@ def _apply_skip_rules(guidelines: dict[str, list[str]], skip_rules: list[str]) -
     skip_lower = [r.lower() for r in skip_rules]
     for cat in guidelines:
         guidelines[cat] = [
-            rule for rule in guidelines[cat]
-            if not any(skip in rule.lower() for skip in skip_lower)
+            rule for rule in guidelines[cat] if not any(skip in rule.lower() for skip in skip_lower)
         ]
 
 
@@ -186,7 +194,10 @@ async def _fetch_config(repo: str, path: str, ref: str, scm: SCMProvider) -> Rev
 
 
 async def _find_project_config(
-    repo: str, ref: str, scm: SCMProvider, changed_files: list[str],
+    repo: str,
+    ref: str,
+    scm: SCMProvider,
+    changed_files: list[str],
 ) -> ReviewConfig | None:
     primary_dir = _find_primary_subtree(changed_files)
     if not primary_dir:

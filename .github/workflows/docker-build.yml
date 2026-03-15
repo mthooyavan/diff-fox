@@ -12,6 +12,9 @@ on:
       - "action/**"
       - "src/**"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,11 +26,10 @@ jobs:
 
       - name: Smoke test
         run: |
-          docker run --rm diff-fox:test python -c "
-          import sys
-          sys.path.insert(0, '/app/src')
-          from diff_fox.models import Finding, ReviewFindings
-          from diff_fox.constants import ALL_AGENT_NAMES
-          print(f'Agents: {ALL_AGENT_NAMES}')
+          docker run --rm --entrypoint python diff-fox:test -c "
+          import sys; sys.path.insert(0, '/app/src');
+          from diff_fox.models import Finding, ReviewFindings;
+          from diff_fox.constants import ALL_AGENT_NAMES;
+          print(f'Agents: {ALL_AGENT_NAMES}');
           print('Smoke test passed')
           "

@@ -10,7 +10,11 @@ import time
 import anthropic
 
 from diff_fox.config.loader import load_config_from_repo, should_skip_file
-from diff_fox.integrations.jira import extract_ticket_numbers, fetch_jira_context, format_jira_context
+from diff_fox.integrations.jira import (
+    extract_ticket_numbers,
+    fetch_jira_context,
+    format_jira_context,
+)
 from diff_fox.output.github_poster import post_review_to_pr
 from diff_fox.review.dedup import semantic_dedup
 from diff_fox.review.jira_alignment import check_jira_alignment
@@ -60,7 +64,11 @@ async def run_review(
 
         logger.info(
             "Starting review for %s PR #%d (%d files, +%d/-%d)",
-            repo, pr_number, len(diff_files), total_additions, total_deletions,
+            repo,
+            pr_number,
+            len(diff_files),
+            total_additions,
+            total_deletions,
         )
 
         # 2. Fetch existing comments (for dedup)
@@ -78,10 +86,7 @@ async def run_review(
         # 4. Filter skipped files
         if config.skip:
             original_count = len(diff_files)
-            diff_files = [
-                f for f in diff_files
-                if not should_skip_file(f.path, config.skip)
-            ]
+            diff_files = [f for f in diff_files if not should_skip_file(f.path, config.skip)]
             skipped = original_count - len(diff_files)
             if skipped:
                 logger.info("Skipped %d files matching skip patterns", skipped)
@@ -99,7 +104,9 @@ async def run_review(
 
         if jira_active and jira_mcp_url:
             ticket_numbers = extract_ticket_numbers(
-                pr.title, pr.body or "", pattern=jira_ticket_pattern,
+                pr.title,
+                pr.body or "",
+                pattern=jira_ticket_pattern,
             )
             if ticket_numbers:
                 try:
@@ -132,12 +139,18 @@ async def run_review(
 
         # 7. Verify findings
         verified = await verify_findings(
-            raw_findings, diff_files, enriched_ctx, client, model,
+            raw_findings,
+            diff_files,
+            enriched_ctx,
+            client,
+            model,
         )
 
         logger.info(
             "Pipeline completed in %.0fms: %d raw → %d verified findings",
-            pipeline_ms, len(raw_findings), len(verified),
+            pipeline_ms,
+            len(raw_findings),
+            len(verified),
         )
 
         # 8. Hard exclusion filter for security findings
@@ -152,7 +165,9 @@ async def run_review(
         # 10. Validate against diff lines + suppress filters
         suppress = config.suppress_filters
         validated, rejected = validate_findings_for_posting(
-            merged, diff_files, suppress_filters=suppress,
+            merged,
+            diff_files,
+            suppress_filters=suppress,
         )
 
         # 11. Filter already-posted findings
@@ -160,19 +175,30 @@ async def run_review(
             validated, already_posted = filter_already_posted(validated, existing_comments)
             if validated:
                 validated, already_posted_llm = await llm_filter_already_posted(
-                    validated, existing_comments, client, model,
+                    validated,
+                    existing_comments,
+                    client,
+                    model,
                 )
 
         # 12. Jira alignment check
         alignment = None
         if jira_context and jira_context.tickets:
             alignment = await check_jira_alignment(
-                jira_context, validated, diff_files, client, model,
+                jira_context,
+                validated,
+                diff_files,
+                client,
+                model,
             )
 
         # 13. Process validated findings (rank, format)
         ranked, comments, summary = process_findings(
-            validated, repo, pr_number, enrichment_failed, alignment=alignment,
+            validated,
+            repo,
+            pr_number,
+            enrichment_failed,
+            alignment=alignment,
         )
 
         # 14. Log findings in dry-run mode
@@ -181,15 +207,24 @@ async def run_review(
             for i, f in enumerate(ranked, 1):
                 logger.info(
                     "  [%d] %s %s | %s:%d-%d | %s",
-                    i, f.severity.upper(), f.category, f.file_path,
-                    f.line_start, f.line_end, f.title,
+                    i,
+                    f.severity.upper(),
+                    f.category,
+                    f.file_path,
+                    f.line_start,
+                    f.line_end,
+                    f.title,
                 )
 
         # 15. Post comments
         post_stats = {"inline_posted": 0, "inline_failed": 0, "summary_posted": False}
         if post_comments and ranked:
             post_stats = await post_review_to_pr(
-                ranked, repo, pr_number, pr.head_sha, scm,
+                ranked,
+                repo,
+                pr_number,
+                pr.head_sha,
+                scm,
                 enrichment_failed=enrichment_failed,
                 pre_formatted_comments=comments,
                 pre_formatted_summary=summary,

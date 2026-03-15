@@ -59,9 +59,7 @@ class GitHubProvider(SCMProvider):
         response.raise_for_status()
         return response.json()
 
-    async def _get_paginated(
-        self, url: str, params: dict[str, Any] | None = None
-    ) -> list[Any]:
+    async def _get_paginated(self, url: str, params: dict[str, Any] | None = None) -> list[Any]:
         """Make paginated GET requests, following Link headers."""
         if params is None:
             params = {}
@@ -129,14 +127,10 @@ class GitHubProvider(SCMProvider):
         Returns:
             A list of DiffFile objects representing the changed files.
         """
-        files_data = await self._get_paginated(
-            f"/repos/{repo}/pulls/{pr_number}/files"
-        )
+        files_data = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/files")
         return parse_diff_files(files_data)
 
-    async def get_file_content(
-        self, repo: str, path: str, ref: str
-    ) -> FileContent:
+    async def get_file_content(self, repo: str, path: str, ref: str) -> FileContent:
         """Fetch the content of a file at a specific ref.
 
         Handles base64 decoding of the file content returned by the GitHub API.
@@ -234,9 +228,7 @@ class GitHubProvider(SCMProvider):
         Returns:
             A list of comment dicts from the GitHub API.
         """
-        return await self._get_paginated(
-            f"/repos/{repo}/pulls/{pr_number}/comments"
-        )
+        return await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/comments")
 
     async def submit_review(
         self,
@@ -268,9 +260,7 @@ class GitHubProvider(SCMProvider):
         )
         response.raise_for_status()
 
-    async def post_pr_comment(
-        self, repo: str, pr_number: int, body: str
-    ) -> None:
+    async def post_pr_comment(self, repo: str, pr_number: int, body: str) -> None:
         """Post a general comment on a pull request (issue comment).
 
         Args:

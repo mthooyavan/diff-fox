@@ -82,7 +82,8 @@ class VerificationResult(BaseModel):
         )
     )
     confidence: float = Field(
-        ge=0.0, le=1.0,
+        ge=0.0,
+        le=1.0,
         description="Confidence in the verdict (0.0 to 1.0)",
     )
     explanation: str = Field(
@@ -119,7 +120,9 @@ async def verify_findings(
     if overflow:
         logger.warning(
             "Too many findings (%d), only verifying first %d; %d kept unverified",
-            len(findings), MAX_FINDINGS_TO_VERIFY, len(overflow),
+            len(findings),
+            MAX_FINDINGS_TO_VERIFY,
+            len(overflow),
         )
 
     diff_by_file = {f.path: f for f in diff_files}
@@ -128,7 +131,11 @@ async def verify_findings(
     async def verify_with_limit(finding: Finding):
         async with semaphore:
             return await _verify_single_finding(
-                finding, diff_by_file, enriched_context, client, model,
+                finding,
+                diff_by_file,
+                enriched_context,
+                client,
+                model,
             )
 
     results = await asyncio.gather(
@@ -157,7 +164,9 @@ async def verify_findings(
             filtered_count += 1
             logger.info(
                 "Filtered: '%s' — confidence=%.2f: %s",
-                finding.title, result.confidence, result.explanation,
+                finding.title,
+                result.confidence,
+                result.explanation,
             )
         else:
             verified.append(finding)
@@ -166,7 +175,10 @@ async def verify_findings(
 
     logger.info(
         "Verification complete: %d verified, %d filtered, %d unverified overflow (total: %d)",
-        len(to_verify) - filtered_count, filtered_count, len(overflow), len(verified),
+        len(to_verify) - filtered_count,
+        filtered_count,
+        len(overflow),
+        len(verified),
     )
     return verified
 
@@ -214,8 +226,12 @@ async def _verify_single_finding(
 
     try:
         result, _ = await get_structured_output(
-            client, model, system_prompt, user_message,
-            VerificationResult, timeout=60,
+            client,
+            model,
+            system_prompt,
+            user_message,
+            VerificationResult,
+            timeout=60,
         )
         return result if isinstance(result, VerificationResult) else None
     except Exception:

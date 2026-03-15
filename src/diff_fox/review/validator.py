@@ -185,7 +185,9 @@ async def llm_filter_already_posted(
             new.append(f)
 
     if already_posted:
-        logger.info("LLM dedup filtered %d findings matching existing comments", len(already_posted))
+        logger.info(
+            "LLM dedup filtered %d findings matching existing comments", len(already_posted)
+        )
 
     return new, already_posted
 
@@ -225,7 +227,12 @@ async def _llm_check_duplicates(
     )
 
     result, _ = await get_structured_output(
-        client, model, _DEDUP_SYSTEM_PROMPT, user_msg, DuplicateCheckResult, timeout=30,
+        client,
+        model,
+        _DEDUP_SYSTEM_PROMPT,
+        user_msg,
+        DuplicateCheckResult,
+        timeout=30,
     )
 
     return result if isinstance(result, DuplicateCheckResult) else None

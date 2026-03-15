@@ -134,7 +134,7 @@ def _extract_ticket_fields(key: str, data: dict) -> JiraTicket:
     for marker in ["acceptance criteria", "ac:", "acceptance:"]:
         idx = description.lower().find(marker)
         if idx != -1:
-            acceptance = description[idx:idx + 1000].strip()
+            acceptance = description[idx : idx + 1000].strip()
             break
 
     return JiraTicket(
@@ -186,8 +186,7 @@ def format_jira_context(jira_context: JiraContext) -> str:
     for ticket in jira_context.tickets:
         parts.append(f"\n## {ticket.key}: {ticket.summary}")
         parts.append(
-            f"Status: {ticket.status} | Priority: {ticket.priority} | "
-            f"Type: {ticket.issue_type}"
+            f"Status: {ticket.status} | Priority: {ticket.priority} | Type: {ticket.issue_type}"
         )
         if ticket.description:
             parts.append(f"Description: {ticket.description[:2000]}")

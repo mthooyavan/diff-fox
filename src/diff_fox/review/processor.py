@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "nit": 2, "pre_existing": 3}
 
 SEVERITY_MARKERS = {
-    "critical": "\U0001f534",      # red circle
-    "warning": "\U0001f7e1",       # yellow circle
-    "nit": "\U0001f535",           # blue circle
+    "critical": "\U0001f534",  # red circle
+    "warning": "\U0001f7e1",  # yellow circle
+    "nit": "\U0001f535",  # blue circle
     "pre_existing": "\U0001f7e3",  # purple circle
 }
 
@@ -23,11 +23,24 @@ SEVERITY_LABELS = {
 }
 
 EXT_TO_LANG = {
-    ".py": "python", ".ts": "typescript", ".js": "javascript",
-    ".go": "go", ".java": "java", ".rb": "ruby", ".rs": "rust",
-    ".kt": "kotlin", ".swift": "swift", ".c": "c", ".cpp": "cpp",
-    ".cs": "csharp", ".php": "php", ".sh": "bash", ".yaml": "yaml",
-    ".yml": "yaml", ".json": "json", ".sql": "sql",
+    ".py": "python",
+    ".ts": "typescript",
+    ".js": "javascript",
+    ".go": "go",
+    ".java": "java",
+    ".rb": "ruby",
+    ".rs": "rust",
+    ".kt": "kotlin",
+    ".swift": "swift",
+    ".c": "c",
+    ".cpp": "cpp",
+    ".cs": "csharp",
+    ".php": "php",
+    ".sh": "bash",
+    ".yaml": "yaml",
+    ".yml": "yaml",
+    ".json": "json",
+    ".sql": "sql",
 }
 
 
@@ -49,7 +62,9 @@ def deduplicate_findings(findings: list[Finding]) -> list[Finding]:
     if len(findings) != len(result):
         logger.info(
             "Deduplication: %d → %d findings (%d duplicates removed)",
-            len(findings), len(result), len(findings) - len(result),
+            len(findings),
+            len(result),
+            len(findings) - len(result),
         )
     return result
 
@@ -114,8 +129,7 @@ def format_summary_comment(
         if enrichment_failed:
             lines.append("")
             lines.append(
-                "\u26a0\ufe0f *Note: Context enrichment failed. "
-                "Review quality may be reduced.*"
+                "\u26a0\ufe0f *Note: Context enrichment failed. Review quality may be reduced.*"
             )
         lines.append("")
         lines.append("---")
@@ -141,8 +155,7 @@ def format_summary_comment(
 
     if enrichment_failed:
         lines.append(
-            "\u26a0\ufe0f *Context enrichment failed. "
-            "Some findings may have reduced accuracy.*"
+            "\u26a0\ufe0f *Context enrichment failed. Some findings may have reduced accuracy.*"
         )
         lines.append("")
 
@@ -194,6 +207,10 @@ def process_findings(
     ranked = rank_findings(deduped)
     inline_comments = [format_finding_comment(f) for f in ranked]
     summary = format_summary_comment(
-        ranked, repo, pr_number, enrichment_failed, alignment=alignment,
+        ranked,
+        repo,
+        pr_number,
+        enrichment_failed,
+        alignment=alignment,
     )
     return ranked, inline_comments, summary
