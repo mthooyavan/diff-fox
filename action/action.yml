@@ -1,0 +1,43 @@
+name: 'DiffFox Code Review'
+description: 'AI-powered code review with 6 specialized agents (logic, security, architecture, performance, risk, cogs)'
+branding:
+  icon: 'eye'
+  color: 'orange'
+
+inputs:
+  anthropic-api-key:
+    description: 'Anthropic API key for Claude'
+    required: true
+  model:
+    description: 'Claude model to use'
+    default: 'claude-sonnet-4-6-20250514'
+  config-path:
+    description: 'Path to config file'
+    default: '.diff-fox/config.yml'
+  jira-mcp-url:
+    description: 'Jira MCP server URL (optional)'
+    required: false
+    default: ''
+  jira-enabled:
+    description: 'Enable Jira context fetching'
+    default: 'false'
+  post-comments:
+    description: 'Post review comments to the PR'
+    default: 'true'
+
+outputs:
+  findings-count:
+    description: 'Number of findings'
+  status:
+    description: 'Review status (completed/skipped/failed)'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+    INPUT_MODEL: ${{ inputs.model }}
+    INPUT_CONFIG_PATH: ${{ inputs.config-path }}
+    INPUT_JIRA_MCP_URL: ${{ inputs.jira-mcp-url }}
+    INPUT_JIRA_ENABLED: ${{ inputs.jira-enabled }}
+    INPUT_POST_COMMENTS: ${{ inputs.post-comments }}

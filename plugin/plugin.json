@@ -1,0 +1,10 @@
+{
+  "name": "diff-fox",
+  "description": "AI code review with 6 specialized agents — logic, security, architecture, performance, risk, and cost analysis",
+  "version": "1.0.0",
+  "agents": ["agents/reviewer.md"],
+  "skills": [
+    "skills/review.md",
+    "skills/review-pr.md"
+  ]
+}
