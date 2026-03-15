@@ -141,12 +141,19 @@ async def _merge_all_findings(
         "logic_error", "security", "architecture", "performance",
         "maintainability", "risk", "tech_debt", "cost",
     }
+    valid_levels = {
+        "senior_engineer", "lead_engineer", "staff_engineer",
+        "principal_engineer", "security_architect", "engineering_manager",
+    }
 
     merged: list[Finding] = []
     for mf in parsed.findings:
         category = mf.category if mf.category in valid_categories else "logic_error"
         primary_idx = mf.merged_from[0] if mf.merged_from else None
         primary = findings[primary_idx - 1] if primary_idx and primary_idx <= len(findings) else None
+
+        raw_level = mf.engineering_level or (primary.engineering_level if primary else "senior_engineer")
+        eng_level = raw_level if raw_level in valid_levels else (primary.engineering_level if primary else "senior_engineer")
 
         merged.append(Finding(
             file_path=mf.file_path,
@@ -157,7 +164,7 @@ async def _merge_all_findings(
             title=mf.title,
             description=mf.description,
             reasoning=primary.reasoning if primary else "Merged from multiple agent findings",
-            engineering_level=mf.engineering_level or (primary.engineering_level if primary else "senior_engineer"),
+            engineering_level=eng_level,
             impact_description=primary.impact_description if primary else mf.description,
             suggested_fix=mf.suggested_fix,
             suggested_code=mf.suggested_code,
