@@ -61,7 +61,7 @@ async def find_call_sites(
         logger.debug("Code search failed for symbol '%s'", symbol.name, exc_info=True)
         return call_sites
 
-    for result in results[:MAX_CALL_SITES_PER_SYMBOL * 2]:
+    for result in results[: MAX_CALL_SITES_PER_SYMBOL * 2]:
         file_path = result.get("path", "")
         # Skip the file where the symbol is defined
         if file_path == symbol.file_path:
@@ -175,14 +175,60 @@ def _extract_python_callees(body: str, own_name: str) -> list[str]:
 
     # Common builtins and keywords to skip
     skip = {
-        "if", "elif", "while", "for", "with", "assert", "return", "yield",
-        "raise", "except", "import", "from", "print", "len", "range",
-        "enumerate", "zip", "map", "filter", "sorted", "reversed",
-        "list", "dict", "set", "tuple", "str", "int", "float", "bool",
-        "isinstance", "issubclass", "type", "super", "property",
-        "staticmethod", "classmethod", "hasattr", "getattr", "setattr",
-        "delattr", "callable", "repr", "id", "hash", "abs", "round",
-        "min", "max", "sum", "any", "all", "next", "iter", "open",
+        "if",
+        "elif",
+        "while",
+        "for",
+        "with",
+        "assert",
+        "return",
+        "yield",
+        "raise",
+        "except",
+        "import",
+        "from",
+        "print",
+        "len",
+        "range",
+        "enumerate",
+        "zip",
+        "map",
+        "filter",
+        "sorted",
+        "reversed",
+        "list",
+        "dict",
+        "set",
+        "tuple",
+        "str",
+        "int",
+        "float",
+        "bool",
+        "isinstance",
+        "issubclass",
+        "type",
+        "super",
+        "property",
+        "staticmethod",
+        "classmethod",
+        "hasattr",
+        "getattr",
+        "setattr",
+        "delattr",
+        "callable",
+        "repr",
+        "id",
+        "hash",
+        "abs",
+        "round",
+        "min",
+        "max",
+        "sum",
+        "any",
+        "all",
+        "next",
+        "iter",
+        "open",
         own_name,
     }
 
@@ -237,11 +283,42 @@ def _extract_generic_callees(body: str, own_name: str) -> list[str]:
 
     # Common keywords across languages to skip
     skip = {
-        "if", "else", "while", "for", "switch", "case", "return", "throw",
-        "new", "delete", "sizeof", "typeof", "instanceof", "catch", "try",
-        "finally", "class", "struct", "enum", "interface", "function",
-        "var", "let", "const", "auto", "void", "int", "float", "double",
-        "string", "bool", "boolean", "char", "byte", "long", "short",
+        "if",
+        "else",
+        "while",
+        "for",
+        "switch",
+        "case",
+        "return",
+        "throw",
+        "new",
+        "delete",
+        "sizeof",
+        "typeof",
+        "instanceof",
+        "catch",
+        "try",
+        "finally",
+        "class",
+        "struct",
+        "enum",
+        "interface",
+        "function",
+        "var",
+        "let",
+        "const",
+        "auto",
+        "void",
+        "int",
+        "float",
+        "double",
+        "string",
+        "bool",
+        "boolean",
+        "char",
+        "byte",
+        "long",
+        "short",
         own_name,
     }
 
@@ -291,11 +368,13 @@ def _find_enclosing_function(
     """
     # Patterns for function definitions across common languages
     func_patterns = [
-        re.compile(r"^\s*(?:async\s+)?def\s+(\w+)\s*\("),        # Python
-        re.compile(r"^\s*(?:async\s+)?function\s+(\w+)\s*\("),    # JS
-        re.compile(r"^\s*(?:public|private|protected|static|\s)*[\w<>\[\],\s]+\s+(\w+)\s*\("),  # Java/C#
+        re.compile(r"^\s*(?:async\s+)?def\s+(\w+)\s*\("),  # Python
+        re.compile(r"^\s*(?:async\s+)?function\s+(\w+)\s*\("),  # JS
+        re.compile(
+            r"^\s*(?:public|private|protected|static|\s)*[\w<>\[\],\s]+\s+(\w+)\s*\("
+        ),  # Java/C#
         re.compile(r"^\s*func\s+(?:\(\s*\w+\s+\*?\w+\s*\)\s+)?(\w+)\s*\("),  # Go
-        re.compile(r"^\s*(?:pub\s+)?(?:async\s+)?fn\s+(\w+)"),    # Rust
+        re.compile(r"^\s*(?:pub\s+)?(?:async\s+)?fn\s+(\w+)"),  # Rust
     ]
 
     for i in range(index, -1, -1):

@@ -173,13 +173,9 @@ def extract_changed_symbols_from_diff(
     # If we have the full file content, use precise symbol detection
     if file_content is not None:
         if ext == ".py":
-            return _extract_python_symbols(
-                diff_file, file_content, changed_lines
-            )
+            return _extract_python_symbols(diff_file, file_content, changed_lines)
         else:
-            return _extract_generic_symbols(
-                diff_file, file_content, changed_lines, ext
-            )
+            return _extract_generic_symbols(diff_file, file_content, changed_lines, ext)
 
     # Fallback: extract symbol names from diff context lines
     symbols: list[SymbolContext] = []
@@ -194,9 +190,7 @@ def extract_changed_symbols_from_diff(
                 m = func_pattern.search(line)
                 if m:
                     name = (
-                        m.group("name")
-                        or m.groupdict().get("name2")
-                        or m.groupdict().get("name3")
+                        m.group("name") or m.groupdict().get("name2") or m.groupdict().get("name3")
                     )
                     if name and name not in seen_names:
                         seen_names.add(name)
@@ -427,9 +421,7 @@ def _extract_generic_symbols(
                             else "",
                             full_body="\n".join(body_lines),
                             change_type=_infer_change_type(diff_file),
-                            diff_hunks=_diff_hunks_for_symbol(
-                                diff_file, start_line, end_line
-                            ),
+                            diff_hunks=_diff_hunks_for_symbol(diff_file, start_line, end_line),
                             line_start=start_line,
                             line_end=end_line,
                         )
@@ -459,9 +451,7 @@ def _extract_generic_symbols(
                             else "",
                             full_body="",
                             change_type=_infer_change_type(diff_file),
-                            diff_hunks=_diff_hunks_for_symbol(
-                                diff_file, start_line, end_line
-                            ),
+                            diff_hunks=_diff_hunks_for_symbol(diff_file, start_line, end_line),
                             line_start=start_line,
                             line_end=end_line,
                         )

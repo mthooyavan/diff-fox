@@ -161,15 +161,15 @@ def _caller_handles_none(call_site: CallSite) -> bool:
     none_patterns = [
         r"\bis\s+None\b",
         r"\bis\s+not\s+None\b",
-        r"\bif\s+\w+\s*:",          # Truthiness check
-        r"\bif\s+not\s+\w+\s*:",    # Falsiness check
-        r"\bor\s+",                  # Fallback with or
-        r"\?\.",                     # Optional chaining (JS/TS)
-        r"\?\?",                     # Nullish coalescing (JS/TS)
-        r"\.unwrap_or",             # Rust unwrap_or
-        r"\.unwrap\(\)",            # Rust unwrap (somewhat handles it)
-        r"\.getOrElse",             # Scala/Kotlin
-        r"\borElse\b",              # Java Optional
+        r"\bif\s+\w+\s*:",  # Truthiness check
+        r"\bif\s+not\s+\w+\s*:",  # Falsiness check
+        r"\bor\s+",  # Fallback with or
+        r"\?\.",  # Optional chaining (JS/TS)
+        r"\?\?",  # Nullish coalescing (JS/TS)
+        r"\.unwrap_or",  # Rust unwrap_or
+        r"\.unwrap\(\)",  # Rust unwrap (somewhat handles it)
+        r"\.getOrElse",  # Scala/Kotlin
+        r"\borElse\b",  # Java Optional
     ]
 
     for pattern in none_patterns:
@@ -347,11 +347,11 @@ def _raises_exceptions(symbol: SymbolContext) -> bool:
 
     # Language-agnostic: look for raise/throw patterns
     patterns = [
-        r"^\s*raise\s+\w+",        # Python raise
-        r"^\s*throw\s+",           # Java/JS/TS/C++ throw
-        r"\bpanic!\s*\(",          # Rust panic
-        r"\bunwrap\(\)",           # Rust unwrap (can panic)
-        r"\bexpect\(",            # Rust expect (can panic)
+        r"^\s*raise\s+\w+",  # Python raise
+        r"^\s*throw\s+",  # Java/JS/TS/C++ throw
+        r"\bpanic!\s*\(",  # Rust panic
+        r"\bunwrap\(\)",  # Rust unwrap (can panic)
+        r"\bexpect\(",  # Rust expect (can panic)
     ]
 
     for pattern in patterns:
@@ -378,14 +378,14 @@ def _caller_has_error_handling(call_site: CallSite) -> bool:
         return True  # Assume handled if we can't see the code
 
     error_patterns = [
-        r"\btry\s*:",              # Python try
-        r"\btry\s*\{",            # Java/JS/TS/C++ try
-        r"\bexcept\s+",           # Python except
-        r"\bcatch\s*\(",          # Java/JS/TS/C++ catch
+        r"\btry\s*:",  # Python try
+        r"\btry\s*\{",  # Java/JS/TS/C++ try
+        r"\bexcept\s+",  # Python except
+        r"\bcatch\s*\(",  # Java/JS/TS/C++ catch
         r"\bresult\s*\.\s*is_err\b",  # Rust Result check
-        r"\bif\s+err\s*!=\s*nil\b",   # Go error check
-        r"\.catch\(",             # JS promise catch
-        r"\.then\(",              # JS promise chain (partial handling)
+        r"\bif\s+err\s*!=\s*nil\b",  # Go error check
+        r"\.catch\(",  # JS promise catch
+        r"\.then\(",  # JS promise chain (partial handling)
     ]
 
     for pattern in error_patterns:

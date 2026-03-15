@@ -80,9 +80,15 @@ async def enrich_context(
         async with semaphore:
             try:
                 await _enrich_single_file(
-                    diff_file, scm, repo, head_ref,
-                    all_symbols, all_call_sites, all_callees,
-                    all_impact_map, all_related_files,
+                    diff_file,
+                    scm,
+                    repo,
+                    head_ref,
+                    all_symbols,
+                    all_call_sites,
+                    all_callees,
+                    all_impact_map,
+                    all_related_files,
                 )
             except Exception:
                 logger.warning(
@@ -158,9 +164,7 @@ async def _enrich_single_file(
     out_symbols.extend(symbols)
 
     # Step 3 & 4: Find call sites and extract callees (concurrently per symbol)
-    call_site_tasks = [
-        find_call_sites(sym, scm, repo, ref) for sym in symbols
-    ]
+    call_site_tasks = [find_call_sites(sym, scm, repo, ref) for sym in symbols]
     call_site_results = await asyncio.gather(*call_site_tasks, return_exceptions=True)
 
     for sym, cs_result in zip(symbols, call_site_results):
@@ -188,8 +192,7 @@ async def _enrich_single_file(
             callee_names = extract_callees_from_body(sym)
             if callee_names:
                 callee_objects = [
-                    Callee(name=name, file_path="", signature="")
-                    for name in callee_names
+                    Callee(name=name, file_path="", signature="") for name in callee_names
                 ]
                 out_callees[qname] = callee_objects
         except Exception:

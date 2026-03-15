@@ -149,7 +149,10 @@ def filter_security_findings(
         if reason:
             logger.info(
                 "Hard exclusion: '%s' at %s:%d — %s",
-                f.title, f.file_path, f.line_start, reason,
+                f.title,
+                f.file_path,
+                f.line_start,
+                reason,
             )
             excluded.append(f)
         else:

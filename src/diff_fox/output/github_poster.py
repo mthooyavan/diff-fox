@@ -69,15 +69,24 @@ async def post_review_to_pr(
         stats["summary_posted"] = True
         logger.info(
             "Submitted review for %s PR #%d: %d inline comments",
-            repo, pr_number, len(review_comments),
+            repo,
+            pr_number,
+            len(review_comments),
         )
     except Exception:
         logger.exception(
             "Failed to submit review for %s PR #%d — falling back to individual comments",
-            repo, pr_number,
+            repo,
+            pr_number,
         )
         stats = await _fallback_individual_posts(
-            findings, comment_bodies, summary_body, repo, pr_number, commit_sha, scm,
+            findings,
+            comment_bodies,
+            summary_body,
+            repo,
+            pr_number,
+            commit_sha,
+            scm,
         )
 
     return stats
@@ -109,18 +118,19 @@ async def _fallback_individual_posts(
                     start_line = finding.line_start
                     line = finding.line_end
                 await scm.post_review_comment(
-                    repo=repo, pr_number=pr_number,
-                    body=body, path=finding.file_path,
-                    line=line, commit_sha=commit_sha,
+                    repo=repo,
+                    pr_number=pr_number,
+                    body=body,
+                    path=finding.file_path,
+                    line=line,
+                    commit_sha=commit_sha,
                     start_line=start_line,
                 )
                 return True
             except Exception:
                 return False
 
-    results = await asyncio.gather(
-        *[post_one(f, b) for f, b in zip(findings, comment_bodies)]
-    )
+    results = await asyncio.gather(*[post_one(f, b) for f, b in zip(findings, comment_bodies)])
     stats["inline_posted"] = sum(1 for r in results if r)
     stats["inline_failed"] = sum(1 for r in results if not r)
 

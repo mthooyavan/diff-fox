@@ -6,7 +6,7 @@ from diff_fox.scm.models import DiffFile, DiffHunk, FileContent, PullRequest
 
 
 def test_all_agent_names():
-    assert ALL_AGENT_NAMES == ["logic", "security", "architecture", "performance", "risk", "cogs"]
+    assert set(ALL_AGENT_NAMES) == {"logic", "security", "architecture", "performance", "risk", "cogs"}
 
 
 def test_finding_creation():

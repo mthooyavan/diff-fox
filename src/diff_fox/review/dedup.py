@@ -119,7 +119,12 @@ async def _merge_all_findings(
     )
 
     parsed, _ = await get_structured_output(
-        client, model, MERGE_SYSTEM_PROMPT, user_msg, MergeResult, timeout=120,
+        client,
+        model,
+        MERGE_SYSTEM_PROMPT,
+        user_msg,
+        MergeResult,
+        timeout=120,
     )
 
     if not isinstance(parsed, MergeResult) or not parsed.findings:
@@ -128,48 +133,73 @@ async def _merge_all_findings(
     for mf in parsed.findings:
         if len(mf.merged_from) > 1:
             originals = [
-                f"[{n}] {findings[n-1].title}" if n <= len(findings) else f"[{n}]"
+                f"[{n}] {findings[n - 1].title}" if n <= len(findings) else f"[{n}]"
                 for n in mf.merged_from
             ]
             logger.info(
                 "  MERGED %d findings → '%s': %s — %s",
-                len(mf.merged_from), mf.title, ", ".join(originals), mf.merge_reason,
+                len(mf.merged_from),
+                mf.title,
+                ", ".join(originals),
+                mf.merge_reason,
             )
 
     valid_categories = {
-        "logic_error", "security", "architecture", "performance",
-        "maintainability", "risk", "tech_debt", "cost",
+        "logic_error",
+        "security",
+        "architecture",
+        "performance",
+        "maintainability",
+        "risk",
+        "tech_debt",
+        "cost",
     }
     valid_levels = {
-        "senior_engineer", "lead_engineer", "staff_engineer",
-        "principal_engineer", "security_architect", "engineering_manager",
+        "senior_engineer",
+        "lead_engineer",
+        "staff_engineer",
+        "principal_engineer",
+        "security_architect",
+        "engineering_manager",
     }
 
     merged: list[Finding] = []
     for mf in parsed.findings:
         category = mf.category if mf.category in valid_categories else "logic_error"
         primary_idx = mf.merged_from[0] if mf.merged_from else None
-        primary = findings[primary_idx - 1] if primary_idx and primary_idx <= len(findings) else None
+        primary = (
+            findings[primary_idx - 1] if primary_idx and primary_idx <= len(findings) else None
+        )
 
-        raw_level = mf.engineering_level or (primary.engineering_level if primary else "senior_engineer")
-        eng_level = raw_level if raw_level in valid_levels else (primary.engineering_level if primary else "senior_engineer")
+        raw_level = mf.engineering_level or (
+            primary.engineering_level if primary else "senior_engineer"
+        )
+        eng_level = (
+            raw_level
+            if raw_level in valid_levels
+            else (primary.engineering_level if primary else "senior_engineer")
+        )
 
-        merged.append(Finding(
-            file_path=mf.file_path,
-            line_start=mf.line_start,
-            line_end=mf.line_end,
-            severity=mf.severity,
-            category=category,
-            title=mf.title,
-            description=mf.description,
-            reasoning=primary.reasoning if primary else "Merged from multiple agent findings",
-            engineering_level=eng_level,
-            impact_description=primary.impact_description if primary else mf.description,
-            suggested_fix=mf.suggested_fix,
-            suggested_code=mf.suggested_code,
-            exploit_scenario=mf.exploit_scenario or (primary.exploit_scenario if primary else None),
-            confidence=mf.confidence or (primary.confidence if primary else None),
-            related_locations=mf.related_locations or (primary.related_locations if primary else None),
-        ))
+        merged.append(
+            Finding(
+                file_path=mf.file_path,
+                line_start=mf.line_start,
+                line_end=mf.line_end,
+                severity=mf.severity,
+                category=category,
+                title=mf.title,
+                description=mf.description,
+                reasoning=primary.reasoning if primary else "Merged from multiple agent findings",
+                engineering_level=eng_level,
+                impact_description=primary.impact_description if primary else mf.description,
+                suggested_fix=mf.suggested_fix,
+                suggested_code=mf.suggested_code,
+                exploit_scenario=mf.exploit_scenario
+                or (primary.exploit_scenario if primary else None),
+                confidence=mf.confidence or (primary.confidence if primary else None),
+                related_locations=mf.related_locations
+                or (primary.related_locations if primary else None),
+            )
+        )
 
     return merged if merged else findings

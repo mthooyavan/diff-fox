@@ -50,9 +50,7 @@ class AlignmentResult(BaseModel):
         default_factory=list,
         description="Specific acceptance criteria from Jira that are not addressed",
     )
-    explanation: str = Field(
-        description="Brief explanation of the alignment verdict"
-    )
+    explanation: str = Field(description="Brief explanation of the alignment verdict")
 
 
 async def check_jira_alignment(
@@ -120,12 +118,16 @@ async def _run_alignment_check(
     if findings_text:
         user_msg += f"Review findings:\n{findings_text}\n"
     user_msg += (
-        "</pr_changes>\n\n"
-        "Does the PR implementation align with the Jira ticket requirements?"
+        "</pr_changes>\n\nDoes the PR implementation align with the Jira ticket requirements?"
     )
 
     result, _ = await get_structured_output(
-        client, model, ALIGNMENT_SYSTEM_PROMPT, user_msg, AlignmentResult, timeout=30,
+        client,
+        model,
+        ALIGNMENT_SYSTEM_PROMPT,
+        user_msg,
+        AlignmentResult,
+        timeout=30,
     )
 
     if isinstance(result, AlignmentResult):
