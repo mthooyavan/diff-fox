@@ -10,7 +10,7 @@ import time
 import anthropic
 
 from diff_fox.config.loader import load_config_from_repo, should_skip_file
-from diff_fox.output.github_poster import resolve_addressed_comments
+from diff_fox.review.resolver import resolve_addressed_comments
 from diff_fox.integrations.jira import (
     extract_ticket_numbers,
     fetch_jira_context,
