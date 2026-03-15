@@ -4,7 +4,6 @@ Compares what a PR implements against what the Jira ticket requires.
 Detects misalignment (wrong ticket) or partial implementation.
 """
 
-import asyncio
 import logging
 from typing import Literal
 
