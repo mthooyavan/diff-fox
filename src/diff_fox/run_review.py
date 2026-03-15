@@ -33,7 +33,7 @@ async def run_review(
     pr_number: int,
     scm: SCMProvider,
     client: anthropic.AsyncAnthropic,
-    model: str = "claude-sonnet-4-6-20250514",
+    model: str = "claude-sonnet-4-6",
     post_comments: bool = True,
     jira_enabled: bool = False,
     jira_mcp_url: str = "",
