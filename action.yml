@@ -35,6 +35,7 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   env:
+    GITHUB_TOKEN: ${{ github.token }}
     ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
     INPUT_MODEL: ${{ inputs.model }}
     INPUT_CONFIG_PATH: ${{ inputs.config-path }}
