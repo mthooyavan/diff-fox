@@ -113,6 +113,8 @@ def filter_already_posted(
 
 def _matches_existing(finding: Finding, existing: list[dict]) -> bool:
     for comment in existing:
+        if not comment.get("path") or not comment.get("line"):
+            continue
         if comment["path"] != finding.file_path:
             continue
         if abs(comment["line"] - finding.line_start) > 5:
