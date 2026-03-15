@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from diff_fox.scm.base import SCMProvider
+from diff_fox.scm.base import DiffFoxComment, SCMProvider
 from diff_fox.scm.diff_parser import parse_diff_files
 from diff_fox.scm.models import DiffFile, FileContent, PullRequest
 
@@ -276,7 +276,7 @@ class GitHubProvider(SCMProvider):
         )
         response.raise_for_status()
 
-    async def get_review_comment_ids_for_difffox(self, repo: str, pr_number: int) -> list[dict]:
+    async def get_difffox_comments(self, repo: str, pr_number: int) -> list[DiffFoxComment]:
         """Get all inline comments from reviews whose body contains 'DiffFox'.
 
         Returns list of dicts with: id, path, line, body.

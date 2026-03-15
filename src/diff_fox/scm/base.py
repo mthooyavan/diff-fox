@@ -1,17 +1,23 @@
 """Abstract base class for SCM (source control management) providers."""
 
 from abc import ABC, abstractmethod
+from typing import TypedDict
 
 from diff_fox.scm.models import DiffFile, FileContent, PullRequest
 
 
-class SCMProvider(ABC):
-    """Abstract base class that defines the interface for SCM providers.
+class DiffFoxComment(TypedDict):
+    """Typed structure for DiffFox review comments used in resolution."""
 
-    All SCM provider implementations (GitHub, GitLab, etc.) must implement
-    these methods to provide a consistent interface for interacting with
-    pull requests, diffs, file content, and review comments.
-    """
+    id: int
+    path: str
+    line: int
+    body: str
+    user_replies: list[str]
+
+
+class SCMProvider(ABC):
+    """Abstract base class that defines the interface for SCM providers."""
 
     @abstractmethod
     async def get_pull_request(self, repo: str, pr_number: int) -> PullRequest: ...
@@ -59,9 +65,4 @@ class SCMProvider(ABC):
     ) -> None: ...
 
     @abstractmethod
-    async def get_review_comment_ids_for_difffox(self, repo: str, pr_number: int) -> list[dict]:
-        """Get all inline comments from DiffFox reviews.
-
-        Returns list of dicts with: id, path, line, body.
-        """
-        ...
+    async def get_difffox_comments(self, repo: str, pr_number: int) -> list[DiffFoxComment]: ...
