@@ -92,6 +92,78 @@ async def post_review_to_pr(
     return stats
 
 
+async def resolve_addressed_comments(
+    new_findings: list[Finding],
+    repo: str,
+    pr_number: int,
+    scm: SCMProvider,
+) -> int:
+    """Reply to old DiffFox comments that are no longer flagged.
+
+    Finds all comments from previous DiffFox reviews, checks if each
+    is still present in the new findings, and replies appropriately.
+
+    If a user has replied in the thread, their reply is acknowledged
+    as context rather than blindly marking as addressed.
+
+    Returns the number of comments resolved.
+    """
+    try:
+        old_comments = await scm.get_review_comment_ids_for_difffox(repo, pr_number)
+    except Exception:
+        logger.warning("Failed to fetch old DiffFox comments for resolution")
+        return 0
+
+    if not old_comments:
+        return 0
+
+    # Build a set of (path, line) from new findings for quick lookup
+    new_locations: set[tuple[str, int]] = set()
+    for f in new_findings:
+        for line in range(f.line_start, f.line_end + 1):
+            new_locations.add((f.file_path, line))
+
+    resolved_count = 0
+    for comment in old_comments:
+        # Skip if this comment's location matches a new finding (still flagged)
+        if (comment["path"], comment["line"]) in new_locations:
+            continue
+
+        # Skip if already resolved in a previous run
+        if "Addressed" in comment["body"] or "Acknowledged" in comment["body"]:
+            continue
+
+        user_replies = comment.get("user_replies", [])
+
+        try:
+            if user_replies:
+                # User has replied — acknowledge their input
+                reply_summary = "; ".join(r[:100] for r in user_replies[:3])
+                await scm.reply_to_comment(
+                    repo,
+                    pr_number,
+                    comment["id"],
+                    f"\u2705 **Acknowledged** — this issue is no longer detected. "
+                    f"Noted your feedback: _{reply_summary}_",
+                )
+            else:
+                # No user replies — simple resolution
+                await scm.reply_to_comment(
+                    repo,
+                    pr_number,
+                    comment["id"],
+                    "\u2705 **Addressed** — this issue is no longer detected in the latest review.",
+                )
+            resolved_count += 1
+        except Exception:
+            logger.debug("Failed to reply to comment %d", comment["id"])
+
+    if resolved_count:
+        logger.info("Resolved %d previously flagged comments", resolved_count)
+
+    return resolved_count
+
+
 async def _fallback_individual_posts(
     findings: list[Finding],
     comment_bodies: list[str],

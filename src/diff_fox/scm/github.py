@@ -261,15 +261,85 @@ class GitHubProvider(SCMProvider):
         response.raise_for_status()
 
     async def post_pr_comment(self, repo: str, pr_number: int, body: str) -> None:
-        """Post a general comment on a pull request (issue comment).
-
-        Args:
-            repo: The full repository name (e.g., "owner/repo").
-            pr_number: The pull request number.
-            body: The comment body text.
-        """
+        """Post a general comment on a pull request (issue comment)."""
         response = await self.client.post(
             f"/repos/{repo}/issues/{pr_number}/comments",
             json={"body": body},
         )
         response.raise_for_status()
+
+    async def reply_to_comment(self, repo: str, pr_number: int, comment_id: int, body: str) -> None:
+        """Reply to an existing review comment thread."""
+        response = await self.client.post(
+            f"/repos/{repo}/pulls/{pr_number}/comments/{comment_id}/replies",
+            json={"body": body},
+        )
+        response.raise_for_status()
+
+    async def get_review_comment_ids_for_difffox(self, repo: str, pr_number: int) -> list[dict]:
+        """Get all inline comments from reviews whose body contains 'DiffFox'.
+
+        Returns list of dicts with: id, path, line, body.
+        """
+        # Step 1: Find DiffFox review IDs
+        response = await self.client.get(
+            f"/repos/{repo}/pulls/{pr_number}/reviews",
+            params={"per_page": 100},
+        )
+        response.raise_for_status()
+        difffox_review_ids = set()
+        for review in response.json():
+            if "DiffFox" in (review.get("body") or ""):
+                difffox_review_ids.add(review["id"])
+
+        if not difffox_review_ids:
+            return []
+
+        # Step 2: Fetch all review comments and build thread map
+        all_comments: list[dict] = []
+        page = 1
+        while True:
+            response = await self.client.get(
+                f"/repos/{repo}/pulls/{pr_number}/comments",
+                params={"per_page": 100, "page": page},
+            )
+            response.raise_for_status()
+            page_data = response.json()
+            if not page_data:
+                break
+            all_comments.extend(page_data)
+            if len(page_data) < 100:
+                break
+            page += 1
+
+        # Build a map of comment_id -> list of reply bodies (from non-bot users)
+        replies_by_parent: dict[int, list[str]] = {}
+        for c in all_comments:
+            parent_id = c.get("in_reply_to_id")
+            if parent_id:
+                user = c.get("user", {})
+                user_type = user.get("type", "")
+                # Only track replies from humans, not bots
+                if user_type != "Bot":
+                    if parent_id not in replies_by_parent:
+                        replies_by_parent[parent_id] = []
+                    replies_by_parent[parent_id].append(c.get("body", ""))
+
+        # Step 3: Filter to DiffFox review comments, include user replies
+        comments: list[dict] = []
+        for c in all_comments:
+            if c.get("pull_request_review_id") in difffox_review_ids:
+                # Skip replies (we only want root comments)
+                if c.get("in_reply_to_id"):
+                    continue
+                comments.append(
+                    {
+                        "id": c["id"],
+                        "path": c.get("path", ""),
+                        "line": c.get("line", 0) or c.get("original_line", 0),
+                        "body": c.get("body", ""),
+                        "user_replies": replies_by_parent.get(c["id"], []),
+                    }
+                )
+
+        return comments
