@@ -281,36 +281,18 @@ class GitHubProvider(SCMProvider):
 
         Returns list of dicts with: id, path, line, body.
         """
-        # Step 1: Find DiffFox review IDs
-        response = await self.client.get(
-            f"/repos/{repo}/pulls/{pr_number}/reviews",
-            params={"per_page": 100},
-        )
-        response.raise_for_status()
+        # Step 1: Find DiffFox review IDs (paginated)
+        all_reviews = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/reviews")
         difffox_review_ids = set()
-        for review in response.json():
+        for review in all_reviews:
             if "DiffFox" in (review.get("body") or ""):
                 difffox_review_ids.add(review["id"])
 
         if not difffox_review_ids:
             return []
 
-        # Step 2: Fetch all review comments and build thread map
-        all_comments: list[dict] = []
-        page = 1
-        while True:
-            response = await self.client.get(
-                f"/repos/{repo}/pulls/{pr_number}/comments",
-                params={"per_page": 100, "page": page},
-            )
-            response.raise_for_status()
-            page_data = response.json()
-            if not page_data:
-                break
-            all_comments.extend(page_data)
-            if len(page_data) < 100:
-                break
-            page += 1
+        # Step 2: Fetch all review comments (paginated via helper)
+        all_comments = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/comments")
 
         # Build a map of comment_id -> list of reply bodies (from non-bot users)
         replies_by_parent: dict[int, list[str]] = {}
