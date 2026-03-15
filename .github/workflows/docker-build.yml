@@ -1,0 +1,33 @@
+name: Docker Build
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "action/**"
+      - "src/**"
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "action/**"
+      - "src/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build Docker image
+        run: docker build -t diff-fox:test .
+
+      - name: Smoke test
+        run: |
+          docker run --rm diff-fox:test python -c "
+          import sys
+          sys.path.insert(0, '/app/src')
+          from diff_fox.models import Finding, ReviewFindings
+          from diff_fox.constants import ALL_AGENT_NAMES
+          print(f'Agents: {ALL_AGENT_NAMES}')
+          print('Smoke test passed')
+          "

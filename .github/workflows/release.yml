@@ -1,0 +1,25 @@
+name: Release
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-major-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Update v1 major version tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          MAJOR=$(echo "$RELEASE_TAG" | grep -oP '^v\d+' || echo "")
+          if [ -n "$MAJOR" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -fa "$MAJOR" -m "Update $MAJOR tag to $RELEASE_TAG"
+            git push origin "$MAJOR" --force
+            echo "Updated $MAJOR tag to point to $RELEASE_TAG"
+          fi
