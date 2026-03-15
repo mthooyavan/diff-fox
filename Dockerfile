@@ -8,4 +8,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ src/
 COPY action/entrypoint.py .
 
-ENTRYPOINT ["python", "entrypoint.py"]
+ENV PYTHONPATH=/app/src
+ENTRYPOINT ["python", "/app/entrypoint.py"]
