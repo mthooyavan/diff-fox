@@ -33,7 +33,7 @@ outputs:
 
 runs:
   using: 'docker'
-  image: 'action/Dockerfile'
+  image: 'Dockerfile'
   env:
     ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
     INPUT_MODEL: ${{ inputs.model }}
