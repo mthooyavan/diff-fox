@@ -10,7 +10,7 @@ inputs:
     required: true
   model:
     description: 'Claude model to use'
-    default: 'claude-sonnet-4-6-20250514'
+    default: 'claude-sonnet-4-6'
   config-path:
     description: 'Path to config file'
     default: '.diff-fox/config.yml'
