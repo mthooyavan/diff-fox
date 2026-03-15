@@ -117,20 +117,36 @@ async def resolve_addressed_comments(
     if not old_comments:
         return 0
 
-    # Build a set of (path, line) from new findings for quick lookup
+    # Build lookup sets: (path, line) for location match + (path, title_prefix) for content match
     new_locations: set[tuple[str, int]] = set()
+    new_titles: set[tuple[str, str]] = set()
     for f in new_findings:
         for line in range(f.line_start, f.line_end + 1):
             new_locations.add((f.file_path, line))
+        new_titles.add((f.file_path, f.title.lower().strip()[:40]))
 
     resolved_count = 0
     for comment in old_comments:
-        # Skip if this comment's location matches a new finding (still flagged)
+        # Skip comments with no valid line (can't match reliably)
+        if not comment.get("line"):
+            continue
+
+        # Skip if location still matches a new finding
         if (comment["path"], comment["line"]) in new_locations:
             continue
 
-        # Skip if already resolved in a previous run
-        if "Addressed" in comment["body"] or "Acknowledged" in comment["body"]:
+        # Also check title-based match (handles line shifts after rebase)
+        body_first_line = comment["body"].split("\n")[0].lower()
+        still_flagged = any(
+            title in body_first_line for _, title in new_titles if _ == comment["path"]
+        )
+        if still_flagged:
+            continue
+
+        # Skip if already resolved — check reply bodies, not the original comment
+        user_replies = comment.get("user_replies", [])
+        all_reply_text = " ".join(user_replies)
+        if "Addressed" in all_reply_text or "Acknowledged" in all_reply_text:
             continue
 
         user_replies = comment.get("user_replies", [])
