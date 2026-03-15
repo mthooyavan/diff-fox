@@ -3,7 +3,6 @@
 Validates findings against diff lines, suppress filters, and already-posted comments.
 """
 
-import asyncio
 import logging
 import re
 

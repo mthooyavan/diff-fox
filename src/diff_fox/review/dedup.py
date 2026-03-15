@@ -4,7 +4,6 @@ Sends ALL findings to the LLM in one call to merge cross-file and
 cross-agent duplicates that describe the same underlying issue.
 """
 
-import asyncio
 import logging
 from typing import Literal
 
