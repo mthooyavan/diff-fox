@@ -149,8 +149,6 @@ async def resolve_addressed_comments(
         if "Addressed" in all_reply_text or "Acknowledged" in all_reply_text:
             continue
 
-        user_replies = comment.get("user_replies", [])
-
         try:
             if user_replies:
                 # User has replied — acknowledge their input
