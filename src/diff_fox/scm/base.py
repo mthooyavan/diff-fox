@@ -52,3 +52,16 @@ class SCMProvider(ABC):
 
     @abstractmethod
     async def post_pr_comment(self, repo: str, pr_number: int, body: str) -> None: ...
+
+    @abstractmethod
+    async def reply_to_comment(
+        self, repo: str, pr_number: int, comment_id: int, body: str
+    ) -> None: ...
+
+    @abstractmethod
+    async def get_review_comment_ids_for_difffox(self, repo: str, pr_number: int) -> list[dict]:
+        """Get all inline comments from DiffFox reviews.
+
+        Returns list of dicts with: id, path, line, body.
+        """
+        ...

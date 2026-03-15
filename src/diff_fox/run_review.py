@@ -10,6 +10,7 @@ import time
 import anthropic
 
 from diff_fox.config.loader import load_config_from_repo, should_skip_file
+from diff_fox.output.github_poster import resolve_addressed_comments
 from diff_fox.integrations.jira import (
     extract_ticket_numbers,
     fetch_jira_context,
@@ -232,6 +233,12 @@ async def run_review(
         elif post_comments and not ranked:
             await scm.post_pr_comment(repo, pr_number, summary)
             post_stats["summary_posted"] = True
+
+        # 16. Resolve old DiffFox comments that are no longer flagged
+        if post_comments:
+            addressed = await resolve_addressed_comments(ranked, repo, pr_number, scm)
+            if addressed:
+                logger.info("Resolved %d previously flagged comments", addressed)
 
         return {
             "status": "completed",
