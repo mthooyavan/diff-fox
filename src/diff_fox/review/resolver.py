@@ -17,7 +17,11 @@ from diff_fox.scm.base import DiffFoxComment, SCMProvider
 logger = logging.getLogger(__name__)
 
 MAX_CONCURRENT_CHECKS = 5
+MAX_COMMENTS_TO_CHECK = 20
 CODE_WINDOW = 30  # lines above and below the comment's line
+
+# Bot reply markers — match the exact prefix to avoid false matches with user text
+_BOT_RESOLVED_MARKERS = ("\u2705 **Addressed**", "\u2705 **Acknowledged**")
 
 
 class ResolutionVerdict(BaseModel):
@@ -127,16 +131,26 @@ async def resolve_addressed_comments(
         if not comment.get("line"):
             continue
 
-        # Skip if already resolved
+        # Skip if already resolved (match exact bot reply prefix, not bare keywords)
         all_replies = comment.get("all_replies", [])
-        all_reply_text = " ".join(all_replies)
-        if "Addressed" in all_reply_text or "Acknowledged" in all_reply_text:
+        already_resolved = any(
+            reply.startswith(marker) for reply in all_replies for marker in _BOT_RESOLVED_MARKERS
+        )
+        if already_resolved:
             continue
 
         candidates.append(comment)
 
     if not candidates:
         return 0
+
+    if len(candidates) > MAX_COMMENTS_TO_CHECK:
+        logger.warning(
+            "Capping resolution checks at %d (found %d candidates)",
+            MAX_COMMENTS_TO_CHECK,
+            len(candidates),
+        )
+        candidates = candidates[:MAX_COMMENTS_TO_CHECK]
 
     logger.info("Checking %d old comments for resolution", len(candidates))
 
