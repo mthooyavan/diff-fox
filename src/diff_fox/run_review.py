@@ -72,7 +72,18 @@ async def run_review(
             total_deletions,
         )
 
-        # 2. Fetch existing comments (for dedup)
+        # 2. Fetch commit messages (for intentional-change context)
+        commit_messages = ""
+        try:
+            commits = await scm.get_pr_commits(repo, pr_number)
+            if commits:
+                lines = [f"- {c.sha[:7]}: {c.message.splitlines()[0]}" for c in commits]
+                commit_messages = "\n".join(lines)
+                logger.info("Fetched %d commit messages for PR", len(commits))
+        except Exception:
+            logger.warning("Failed to fetch commit messages, continuing without")
+
+        # 3. Fetch existing comments (for dedup)
         try:
             existing_comments = await scm.get_review_comments(repo, pr_number)
             if existing_comments:
@@ -80,11 +91,11 @@ async def run_review(
         except Exception:
             existing_comments = []
 
-        # 3. Load config
+        # 4. Load config
         changed_paths = [f.path for f in diff_files]
         config = await load_config_from_repo(repo, pr.head_sha, scm, changed_paths)
 
-        # 4. Filter skipped files
+        # 5. Filter skipped files
         if config.skip:
             original_count = len(diff_files)
             diff_files = [f for f in diff_files if not should_skip_file(f.path, config.skip)]
@@ -96,7 +107,7 @@ async def run_review(
             logger.info("No reviewable files after filtering — skipping review")
             return {"status": "skipped", "reason": "no reviewable files"}
 
-        # 5. Fetch Jira context (if enabled)
+        # 6. Fetch Jira context (if enabled)
         jira_context = None
         jira_context_text = ""
         jira_active = jira_enabled
@@ -121,7 +132,7 @@ async def run_review(
                 except Exception:
                     logger.warning("Jira context fetch failed, continuing without")
 
-        # 6. Run pipeline (enrich → agents → aggregate)
+        # 7. Run pipeline (enrich → agents → aggregate)
         t0 = time.monotonic()
         raw_findings, enriched_ctx, enrichment_failed, pipeline_metrics = await run_pipeline(
             diff_files=diff_files,
@@ -135,10 +146,11 @@ async def run_review(
             model=model,
             existing_comments=existing_comments,
             jira_context_text=jira_context_text,
+            commit_messages=commit_messages,
         )
         pipeline_ms = (time.monotonic() - t0) * 1000
 
-        # 7. Verify findings
+        # 8. Verify findings
         verified = await verify_findings(
             raw_findings,
             diff_files,
@@ -154,16 +166,16 @@ async def run_review(
             len(verified),
         )
 
-        # 8. Hard exclusion filter for security findings
+        # 9. Hard exclusion filter for security findings
         verified, hard_excluded = filter_security_findings(verified)
         if hard_excluded:
             logger.info("Hard exclusion filtered %d security findings", len(hard_excluded))
 
-        # 9. Semantic dedup (LLM-based cross-agent merge)
+        # 10. Semantic dedup (LLM-based cross-agent merge)
         merged = await semantic_dedup(verified, client, model)
         logger.info("Semantic dedup: %d → %d findings", len(verified), len(merged))
 
-        # 10. Validate against diff lines + suppress filters
+        # 11. Validate against diff lines + suppress filters
         suppress = config.suppress_filters
         validated, rejected = validate_findings_for_posting(
             merged,
@@ -171,7 +183,7 @@ async def run_review(
             suppress_filters=suppress,
         )
 
-        # 11. Filter already-posted findings
+        # 12. Filter already-posted findings
         if existing_comments:
             validated, already_posted = filter_already_posted(validated, existing_comments)
             if validated:
@@ -182,7 +194,7 @@ async def run_review(
                     model,
                 )
 
-        # 12. Jira alignment check
+        # 13. Jira alignment check
         alignment = None
         if jira_context and jira_context.tickets:
             alignment = await check_jira_alignment(
@@ -193,7 +205,7 @@ async def run_review(
                 model,
             )
 
-        # 13. Process validated findings (rank, format)
+        # 14. Process validated findings (rank, format)
         ranked, comments, summary = process_findings(
             validated,
             repo,
@@ -202,7 +214,7 @@ async def run_review(
             alignment=alignment,
         )
 
-        # 14. Log findings in dry-run mode
+        # 15. Log findings in dry-run mode
         if not post_comments and ranked:
             logger.info("=== DRY RUN: %d findings ===", len(ranked))
             for i, f in enumerate(ranked, 1):
@@ -217,7 +229,7 @@ async def run_review(
                     f.title,
                 )
 
-        # 15. Post comments
+        # 16. Post comments
         post_stats = {"inline_posted": 0, "inline_failed": 0, "summary_posted": False}
         if post_comments and ranked:
             post_stats = await post_review_to_pr(
@@ -234,7 +246,7 @@ async def run_review(
             await scm.post_pr_comment(repo, pr_number, summary)
             post_stats["summary_posted"] = True
 
-        # 16. Resolve old DiffFox comments that are no longer flagged
+        # 17. Resolve old DiffFox comments that are no longer flagged
         if post_comments:
             addressed = await resolve_addressed_comments(ranked, repo, pr_number, scm)
             if addressed:
