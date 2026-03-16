@@ -41,6 +41,13 @@ class DiffFile(BaseModel):
     hunks: list[DiffHunk] = Field(default_factory=list)
 
 
+class CommitInfo(BaseModel):
+    """Represents a commit in a pull request."""
+
+    sha: str
+    message: str
+
+
 class FileContent(BaseModel):
     """Represents the content of a file at a specific ref."""
 

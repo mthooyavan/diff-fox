@@ -201,6 +201,7 @@ def build_user_message(
     existing_comments: list[dict],
     jira_context_text: str,
     agent_name: str,
+    commit_messages: str = "",
 ) -> str:
     """Build the user message for an agent review call."""
     existing_ctx = ""
@@ -222,6 +223,14 @@ def build_user_message(
 
     jira_block = f"{jira_context_text}\n\n" if jira_context_text else ""
 
+    commits_block = ""
+    if commit_messages:
+        commits_block = (
+            "<commit_messages>\n"
+            f"{commit_messages}\n"
+            "</commit_messages>\n\n"
+        )
+
     diff_text = _format_diff(diff_files)
     context_text = _format_context(ctx, agent_name)
 
@@ -229,6 +238,7 @@ def build_user_message(
         f"{existing_ctx}"
         f"{pr_context}"
         f"{jira_block}"
+        f"{commits_block}"
         "<pr_diff>\n"
         f"{diff_text}\n"
         "</pr_diff>\n\n"
@@ -249,6 +259,7 @@ async def _run_single_agent(
     pr_description: str,
     existing_comments: list[dict],
     jira_context_text: str,
+    commit_messages: str = "",
 ) -> tuple[list[Finding], dict]:
     """Run a single review agent and return its findings + metrics."""
     t0 = time.monotonic()
@@ -266,6 +277,7 @@ async def _run_single_agent(
         existing_comments,
         jira_context_text,
         agent_name,
+        commit_messages,
     )
 
     try:
@@ -308,6 +320,7 @@ async def run_pipeline(
     model: str,
     existing_comments: list[dict],
     jira_context_text: str = "",
+    commit_messages: str = "",
 ) -> tuple[list[Finding], EnrichedContext | None, bool, dict]:
     """Run the full review pipeline: enrich → agents → aggregate.
 
@@ -368,6 +381,7 @@ async def run_pipeline(
                 pr_description,
                 existing_comments,
                 jira_context_text,
+                commit_messages,
             )
         )
 

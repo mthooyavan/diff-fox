@@ -8,7 +8,7 @@ import httpx
 
 from diff_fox.scm.base import DiffFoxComment, SCMProvider
 from diff_fox.scm.diff_parser import parse_diff_files
-from diff_fox.scm.models import DiffFile, FileContent, PullRequest
+from diff_fox.scm.models import CommitInfo, DiffFile, FileContent, PullRequest
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +129,14 @@ class GitHubProvider(SCMProvider):
         """
         files_data = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/files")
         return parse_diff_files(files_data)
+
+    async def get_pr_commits(self, repo: str, pr_number: int) -> list[CommitInfo]:
+        """Fetch all commits for a pull request."""
+        data = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/commits")
+        return [
+            CommitInfo(sha=c["sha"], message=c["commit"]["message"])
+            for c in data
+        ]
 
     async def get_file_content(self, repo: str, path: str, ref: str) -> FileContent:
         """Fetch the content of a file at a specific ref.

@@ -56,6 +56,13 @@ BE CONCISE:
 - suggested_fix: plain text explanation when the fix is conceptual or multi-step.
   Do NOT put prose in suggested_code or code in suggested_fix.
 
+COMMIT MESSAGES (when provided):
+- Commit messages describe the AUTHOR'S INTENT for each change
+- If a commit message explains WHY a change was made (e.g., "remove X because Y"),
+  factor that intent into your analysis before flagging the change as a problem
+- A genuine bug is still a bug regardless of stated intent — but a deliberate,
+  explained removal or restructuring is NOT a bug
+
 JIRA CONTEXT (when provided):
 - Use it to UNDERSTAND the intent behind the code changes
 - It is INFORMATIONAL ONLY — do NOT suppress or change findings based on Jira

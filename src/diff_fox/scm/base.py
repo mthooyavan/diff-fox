@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import TypedDict
 
-from diff_fox.scm.models import DiffFile, FileContent, PullRequest
+from diff_fox.scm.models import CommitInfo, DiffFile, FileContent, PullRequest
 
 
 class DiffFoxComment(TypedDict):
@@ -64,6 +64,9 @@ class SCMProvider(ABC):
     async def reply_to_comment(
         self, repo: str, pr_number: int, comment_id: int, body: str
     ) -> None: ...
+
+    @abstractmethod
+    async def get_pr_commits(self, repo: str, pr_number: int) -> list[CommitInfo]: ...
 
     @abstractmethod
     async def get_difffox_comments(self, repo: str, pr_number: int) -> list[DiffFoxComment]: ...
