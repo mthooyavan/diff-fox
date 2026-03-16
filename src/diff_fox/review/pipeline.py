@@ -225,11 +225,7 @@ def build_user_message(
 
     commits_block = ""
     if commit_messages:
-        commits_block = (
-            "<commit_messages>\n"
-            f"{commit_messages}\n"
-            "</commit_messages>\n\n"
-        )
+        commits_block = f"<commit_messages>\n{commit_messages}\n</commit_messages>\n\n"
 
     diff_text = _format_diff(diff_files)
     context_text = _format_context(ctx, agent_name)
