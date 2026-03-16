@@ -248,7 +248,9 @@ async def run_review(
 
         # 17. Resolve old DiffFox comments that are no longer flagged
         if post_comments:
-            addressed = await resolve_addressed_comments(ranked, repo, pr_number, scm)
+            addressed = await resolve_addressed_comments(
+                repo, pr_number, pr.head_sha, scm, client, model
+            )
             if addressed:
                 logger.info("Resolved %d previously flagged comments", addressed)
 
