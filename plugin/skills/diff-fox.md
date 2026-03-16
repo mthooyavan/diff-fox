@@ -1,5 +1,5 @@
 ---
-name: review
+name: diff-fox
 description: Review all committed changes on the current branch vs the base branch using local git diff. No GitHub access needed.
 ---
 

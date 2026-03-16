@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "agents": ["agents/reviewer.md"],
   "skills": [
-    "skills/review.md",
-    "skills/review-pr.md"
+    "skills/diff-fox.md",
+    "skills/diff-fox-pr.md"
   ]
 }
