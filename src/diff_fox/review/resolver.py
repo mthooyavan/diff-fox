@@ -63,12 +63,13 @@ async def resolve_addressed_comments(
         if still_flagged:
             continue
 
-        # Skip if already resolved — check reply bodies, not the original comment
-        user_replies = comment.get("user_replies", [])
-        all_reply_text = " ".join(user_replies)
+        # Skip if already resolved — check ALL replies (including bot's own previous replies)
+        all_replies = comment.get("all_replies", [])
+        all_reply_text = " ".join(all_replies)
         if "Addressed" in all_reply_text or "Acknowledged" in all_reply_text:
             continue
 
+        user_replies = comment.get("user_replies", [])
         try:
             if user_replies:
                 reply_summary = "; ".join(r[:100] for r in user_replies[:3])

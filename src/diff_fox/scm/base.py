@@ -13,7 +13,8 @@ class DiffFoxComment(TypedDict):
     path: str
     line: int
     body: str
-    user_replies: list[str]
+    user_replies: list[str]  # Human replies only (for acknowledgment context)
+    all_replies: list[str]  # All replies including bot (for dedup/resolution check)
 
 
 class SCMProvider(ABC):
