@@ -133,10 +133,7 @@ class GitHubProvider(SCMProvider):
     async def get_pr_commits(self, repo: str, pr_number: int) -> list[CommitInfo]:
         """Fetch all commits for a pull request."""
         data = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/commits")
-        return [
-            CommitInfo(sha=c["sha"], message=c["commit"]["message"])
-            for c in data
-        ]
+        return [CommitInfo(sha=c["sha"], message=c["commit"]["message"]) for c in data]
 
     async def get_file_content(self, repo: str, path: str, ref: str) -> FileContent:
         """Fetch the content of a file at a specific ref.
