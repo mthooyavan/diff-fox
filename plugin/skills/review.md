@@ -1,29 +1,34 @@
 ---
 name: review
-description: Review all committed changes on the current branch vs the base branch. Runs 6 specialized review agents (logic, security, architecture, performance, risk, cost).
+description: Review all committed changes on the current branch vs the base branch using local git diff. No GitHub access needed.
 ---
 
 # DiffFox Code Review
 
-You are running a comprehensive code review using 6 specialized perspectives. Follow these steps exactly.
+You are running a LOCAL code review using 6 specialized perspectives. Follow these steps exactly.
 
-## Step 1: Determine the Diff
+**DO NOT use GitHub API, `gh` CLI, or fetch any PRs. This is a LOCAL-ONLY review using `git diff`.**
 
-1. Detect the base branch:
+## Step 1: Get the Local Git Diff (DO THIS FIRST)
+
+This is the most important step. You MUST get the diff using local git commands, NOT from GitHub.
+
+1. Detect the base branch by running this command:
    ```bash
    git branch -l main master 2>/dev/null
    ```
-   - If `main` exists, use `main`
-   - Else if `master` exists, use `master`
+   - If `main` exists, use `main` as the base
+   - Else if `master` exists, use `master` as the base
    - If neither exists, ask the user for the base branch name
 
-2. Get the full branch diff (all committed changes since divergence):
+2. Get the full branch diff using this exact command:
    ```bash
    git diff <base>...HEAD
    ```
-   This includes ALL files changed across all commits on the current branch.
+   Replace `<base>` with the detected base branch name. This shows ALL committed changes since the current branch diverged from the base.
 
 3. If the diff is empty, tell the user "No changes found on this branch compared to <base>."
+4. If the diff is too large, use `git diff <base>...HEAD --stat` first to see which files changed, then read the most important ones.
 
 ## Step 2: Load Configuration
 
