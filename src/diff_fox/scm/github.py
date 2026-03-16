@@ -131,9 +131,14 @@ class GitHubProvider(SCMProvider):
         return parse_diff_files(files_data)
 
     async def get_pr_commits(self, repo: str, pr_number: int) -> list[CommitInfo]:
-        """Fetch commits for a pull request (capped at 50 most recent)."""
-        data = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/commits")
-        return [CommitInfo(sha=c["sha"], message=c["commit"]["message"]) for c in data[-50:]]
+        """Fetch commits for a pull request (single page, max 50)."""
+        data = await self._get(
+            f"/repos/{repo}/pulls/{pr_number}/commits",
+            params={"per_page": 50},
+        )
+        if not isinstance(data, list):
+            return []
+        return [CommitInfo(sha=c["sha"], message=c["commit"]["message"]) for c in data]
 
     async def get_file_content(self, repo: str, path: str, ref: str) -> FileContent:
         """Fetch the content of a file at a specific ref.
