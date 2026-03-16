@@ -295,23 +295,28 @@ class GitHubProvider(SCMProvider):
         all_comments = await self._get_paginated(f"/repos/{repo}/pulls/{pr_number}/comments")
 
         # Build a map of comment_id -> list of reply bodies (from non-bot users)
-        replies_by_parent: dict[int, list[str]] = {}
+        # Build reply maps: human-only + all (including bot)
+        user_replies_by_parent: dict[int, list[str]] = {}
+        all_replies_by_parent: dict[int, list[str]] = {}
         for c in all_comments:
             parent_id = c.get("in_reply_to_id")
             if parent_id:
+                body = c.get("body", "")
+                # All replies (for resolution dedup)
+                if parent_id not in all_replies_by_parent:
+                    all_replies_by_parent[parent_id] = []
+                all_replies_by_parent[parent_id].append(body)
+                # Human replies only (for acknowledgment context)
                 user = c.get("user", {})
-                user_type = user.get("type", "")
-                # Only track replies from humans, not bots
-                if user_type != "Bot":
-                    if parent_id not in replies_by_parent:
-                        replies_by_parent[parent_id] = []
-                    replies_by_parent[parent_id].append(c.get("body", ""))
+                if user.get("type", "") != "Bot":
+                    if parent_id not in user_replies_by_parent:
+                        user_replies_by_parent[parent_id] = []
+                    user_replies_by_parent[parent_id].append(body)
 
-        # Step 3: Filter to DiffFox review comments, include user replies
+        # Step 3: Filter to DiffFox review comments
         comments: list[dict] = []
         for c in all_comments:
             if c.get("pull_request_review_id") in difffox_review_ids:
-                # Skip replies (we only want root comments)
                 if c.get("in_reply_to_id"):
                     continue
                 comments.append(
@@ -320,7 +325,8 @@ class GitHubProvider(SCMProvider):
                         "path": c.get("path", ""),
                         "line": c.get("line", 0) or c.get("original_line", 0),
                         "body": c.get("body", ""),
-                        "user_replies": replies_by_parent.get(c["id"], []),
+                        "user_replies": user_replies_by_parent.get(c["id"], []),
+                        "all_replies": all_replies_by_parent.get(c["id"], []),
                     }
                 )
 
