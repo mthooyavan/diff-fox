@@ -1,30 +1,113 @@
 """Comment resolution for previously flagged DiffFox findings.
 
-After a re-review, replies to old DiffFox comments that are no longer
-flagged, acknowledging user replies if present.
+After a re-review, uses LLM verification to check whether each old finding
+was actually fixed in the current code before marking it as resolved.
 """
 
+import asyncio
 import logging
+from typing import Literal
 
-from diff_fox.models import Finding
-from diff_fox.scm.base import SCMProvider
+import anthropic
+from pydantic import BaseModel
+
+from diff_fox.llm import get_structured_output
+from diff_fox.scm.base import DiffFoxComment, SCMProvider
 
 logger = logging.getLogger(__name__)
 
+MAX_CONCURRENT_CHECKS = 5
+CODE_WINDOW = 30  # lines above and below the comment's line
+
+
+class ResolutionVerdict(BaseModel):
+    """LLM verdict on whether a previously flagged issue was fixed."""
+
+    verdict: Literal["fixed", "not_fixed", "uncertain"] = "uncertain"
+    reasoning: str = ""
+
+
+RESOLUTION_SYSTEM_PROMPT = """\
+You are a code review resolution agent. Your ONLY job is to determine whether
+a previously flagged issue has been FIXED in the current code.
+
+You will receive:
+1. The original finding (the review comment body)
+2. The current code around the location where the finding was flagged
+
+Rules:
+- Mark as "fixed" ONLY if you have clear evidence the issue described in the
+  finding is no longer present in the current code
+- Mark as "not_fixed" if the issue described in the finding is still present
+- Mark as "uncertain" if you cannot determine from the available code
+- Be conservative: if in doubt, use "not_fixed" or "uncertain"
+- A formatting change (whitespace, line wrapping) does NOT fix a logic issue
+- Focus on the SUBSTANCE of the finding, not superficial code changes
+"""
+
+
+async def _check_resolution(
+    comment: DiffFoxComment,
+    repo: str,
+    head_sha: str,
+    scm: SCMProvider,
+    client: anthropic.AsyncAnthropic,
+    model: str,
+) -> ResolutionVerdict:
+    """Use LLM to verify whether a single finding was fixed."""
+    try:
+        file_content = await scm.get_file_content(repo, comment["path"], head_sha)
+    except Exception:
+        # File no longer exists → the code was removed, finding is addressed
+        return ResolutionVerdict(verdict="fixed", reasoning="File no longer exists")
+
+    # Extract code window around the comment's line
+    lines = file_content.content.splitlines()
+    center = max(0, comment["line"] - 1)  # 0-indexed
+    start = max(0, center - CODE_WINDOW)
+    end = min(len(lines), center + CODE_WINDOW + 1)
+    numbered_lines = [f"{i + 1}: {lines[i]}" for i in range(start, end)]
+    code_snippet = "\n".join(numbered_lines)
+
+    user_message = (
+        f"<original_finding>\n"
+        f"File: {comment['path']}:{comment['line']}\n"
+        f"{comment['body']}\n"
+        f"</original_finding>\n\n"
+        f'<current_code file="{comment["path"]}" '
+        f'lines="{start + 1}-{end}">\n'
+        f"{code_snippet}\n"
+        f"</current_code>"
+    )
+
+    try:
+        result, _ = await get_structured_output(
+            client,
+            model,
+            RESOLUTION_SYSTEM_PROMPT,
+            user_message,
+            ResolutionVerdict,
+            timeout=30.0,
+            max_tokens=512,
+        )
+        return result
+    except Exception:
+        logger.debug("LLM resolution check failed for comment %d", comment["id"])
+        return ResolutionVerdict(verdict="uncertain", reasoning="LLM check failed")
+
 
 async def resolve_addressed_comments(
-    new_findings: list[Finding],
     repo: str,
     pr_number: int,
+    head_sha: str,
     scm: SCMProvider,
+    client: anthropic.AsyncAnthropic,
+    model: str,
 ) -> int:
-    """Reply to old DiffFox comments that are no longer flagged.
+    """Verify and resolve old DiffFox comments using LLM verification.
 
-    Finds all comments from previous DiffFox reviews, checks if each
-    is still present in the new findings, and replies appropriately.
-
-    If a user has replied in the thread, their reply is acknowledged
-    as context rather than blindly marking as addressed.
+    For each old DiffFox comment, checks whether the issue was actually
+    fixed in the current code before posting an "Addressed" reply.
 
     Returns the number of comments resolved.
     """
@@ -37,36 +120,54 @@ async def resolve_addressed_comments(
     if not old_comments:
         return 0
 
-    # Build lookup sets: (path, line) for location match + (path, title_prefix) for content match
-    new_locations: set[tuple[str, int]] = set()
-    new_titles: set[tuple[str, str]] = set()
-    for f in new_findings:
-        for line in range(f.line_start, f.line_end + 1):
-            new_locations.add((f.file_path, line))
-        new_titles.add((f.file_path, f.title.lower().strip()[:40]))
-
-    resolved_count = 0
+    # Filter to comments that need checking
+    candidates: list[DiffFoxComment] = []
     for comment in old_comments:
-        # Skip comments with no valid line (can't match reliably)
+        # Skip comments with no valid line
         if not comment.get("line"):
             continue
 
-        # Skip if location still matches a new finding
-        if (comment["path"], comment["line"]) in new_locations:
-            continue
-
-        # Also check title-based match (handles line shifts after rebase)
-        body_first_line = comment["body"].split("\n")[0].lower()
-        still_flagged = any(
-            title in body_first_line for _, title in new_titles if _ == comment["path"]
-        )
-        if still_flagged:
-            continue
-
-        # Skip if already resolved — check ALL replies (including bot's own previous replies)
+        # Skip if already resolved
         all_replies = comment.get("all_replies", [])
         all_reply_text = " ".join(all_replies)
         if "Addressed" in all_reply_text or "Acknowledged" in all_reply_text:
+            continue
+
+        candidates.append(comment)
+
+    if not candidates:
+        return 0
+
+    logger.info("Checking %d old comments for resolution", len(candidates))
+
+    # Run LLM verification concurrently (capped)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_CHECKS)
+
+    async def check_with_limit(c: DiffFoxComment) -> tuple[DiffFoxComment, ResolutionVerdict]:
+        async with semaphore:
+            verdict = await _check_resolution(c, repo, head_sha, scm, client, model)
+            return c, verdict
+
+    results = await asyncio.gather(
+        *(check_with_limit(c) for c in candidates),
+        return_exceptions=True,
+    )
+
+    # Post replies for confirmed fixes
+    resolved_count = 0
+    for result in results:
+        if isinstance(result, BaseException):
+            logger.debug("Resolution check failed: %s", result)
+            continue
+
+        comment, verdict = result
+        if verdict.verdict != "fixed":
+            logger.debug(
+                "Comment %d not resolved (%s): %s",
+                comment["id"],
+                verdict.verdict,
+                verdict.reasoning,
+            )
             continue
 
         user_replies = comment.get("user_replies", [])
@@ -77,7 +178,7 @@ async def resolve_addressed_comments(
                     repo,
                     pr_number,
                     comment["id"],
-                    f"\u2705 **Acknowledged** — this issue is no longer detected. "
+                    f"\u2705 **Acknowledged** \u2014 this issue has been fixed. "
                     f"Noted your feedback: _{reply_summary}_",
                 )
             else:
@@ -85,7 +186,7 @@ async def resolve_addressed_comments(
                     repo,
                     pr_number,
                     comment["id"],
-                    "\u2705 **Addressed** — this issue is no longer detected in the latest review.",
+                    "\u2705 **Addressed** \u2014 this issue has been fixed in the current code.",
                 )
             resolved_count += 1
         except Exception:
