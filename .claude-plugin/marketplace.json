@@ -1,0 +1,24 @@
+{
+  "name": "diff-fox-marketplace",
+  "owner": {
+    "name": "mthooyavan",
+    "email": "mthooyavan@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "AI-powered code review with 6 specialized agents"
+  },
+  "plugins": [
+    {
+      "name": "diff-fox",
+      "source": "./plugin",
+      "description": "AI code review with 6 specialized agents — logic, security, architecture, performance, risk, and cost analysis",
+      "version": "1.0.0",
+      "author": {
+        "name": "mthooyavan"
+      },
+      "repository": "https://github.com/mthooyavan/diff-fox",
+      "license": "MIT",
+      "keywords": ["code-review", "security", "ai", "claude"]
+    }
+  ]
+}

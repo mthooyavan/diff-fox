@@ -47,21 +47,20 @@ jobs:
 
 ### Claude Code Plugin
 
-**Option A: Clone and register globally**
-```bash
-# Clone the repo
-git clone https://github.com/mthooyavan/diff-fox.git ~/diff-fox
-
-# Register in Claude Code (add to ~/.claude/plugins/installed_plugins.json)
-# Add this entry under "plugins":
-#   "diff-fox@local": [{"scope": "user", "installPath": "~/diff-fox/plugin", "version": "1.0.0"}]
+**Install from GitHub** (inside any Claude Code session):
+```
+/plugin marketplace add mthooyavan/diff-fox
+/plugin install diff-fox@diff-fox-marketplace
 ```
 
-**Option B: Project-level install (per-project)**
+**Or install from local clone:**
 ```bash
-# In any project you want to review:
-mkdir -p .claude/plugins
-ln -s /path/to/diff-fox/plugin .claude/plugins/diff-fox
+git clone https://github.com/mthooyavan/diff-fox.git ~/diff-fox
+```
+Then in Claude Code:
+```
+/plugin marketplace add ~/diff-fox
+/plugin install diff-fox@diff-fox-marketplace
 ```
 
 **Usage** (start a new Claude Code session after install):
