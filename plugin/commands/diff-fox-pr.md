@@ -1,6 +1,6 @@
 ---
-name: diff-fox-pr
-description: Review a GitHub PR by URL or number. Fetches the PR diff and runs 6 specialized review agents.
+description: Review a GitHub PR by URL or number using 6 specialized review agents
+argument-hint: PR number or URL
 ---
 
 # DiffFox PR Review
