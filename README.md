@@ -35,7 +35,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: mthooyavan/diff-fox@main
@@ -43,20 +43,36 @@ jobs:
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
+> **Dependabot PRs:** If you use Dependabot, add `ANTHROPIC_API_KEY` under **Settings > Secrets > Dependabot** separately — Dependabot can't access regular repo secrets. Alternatively, skip DiffFox for Dependabot by adding `if: github.actor != 'dependabot[bot]'` to the job.
+
 ### Claude Code Plugin
 
+**Option A: Clone and register globally**
 ```bash
-# Install the plugin
-claude plugin add path/to/diff-fox/plugin
+# Clone the repo
+git clone https://github.com/mthooyavan/diff-fox.git ~/diff-fox
 
-# Review changes on your current branch
-/review
-
-# Review a specific PR
-/review-pr 123
+# Register in Claude Code (add to ~/.claude/plugins/installed_plugins.json)
+# Add this entry under "plugins":
+#   "diff-fox@local": [{"scope": "user", "installPath": "~/diff-fox/plugin", "version": "1.0.0"}]
 ```
 
-No Python dependencies needed for the plugin — it uses Claude Code's built-in tools.
+**Option B: Project-level install (per-project)**
+```bash
+# In any project you want to review:
+mkdir -p .claude/plugins
+ln -s /path/to/diff-fox/plugin .claude/plugins/diff-fox
+```
+
+**Usage** (start a new Claude Code session after install):
+```
+/diff-fox              # Review all changes on current branch vs main/master
+/diff-fox-pr 123       # Review a specific GitHub PR
+```
+
+No Python dependencies — uses Claude Code's built-in Read, Grep, Glob, and Bash tools.
+
+> **Note:** If you also have the `code-review` plugin installed, use `/diff-fox` (not `/review`) to avoid name collision.
 
 ## Configuration
 
