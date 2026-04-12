@@ -8,6 +8,10 @@ inputs:
   anthropic-api-key:
     description: 'Anthropic API key for Claude'
     required: true
+  github-token:
+    description: 'GitHub token used for PR API access. Defaults to the job token; override with a PAT if you need cross-repo or elevated permissions.'
+    required: false
+    default: ${{ github.token }}
   model:
     description: 'Claude model to use'
     default: 'claude-sonnet-4-6'
@@ -35,7 +39,7 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   env:
-    GITHUB_TOKEN: ${{ github.token }}
+    GITHUB_TOKEN: ${{ inputs.github-token }}
     ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
     INPUT_MODEL: ${{ inputs.model }}
     INPUT_CONFIG_PATH: ${{ inputs.config-path }}
